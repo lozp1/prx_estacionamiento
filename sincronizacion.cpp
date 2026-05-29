@@ -3,12 +3,12 @@
 #include <string>
 #include <vector>
 #include <cstring>
-#include <cmath> // Necesario para la función ceil()
+#include <cmath> 
+#include <mysql/mysql.h> // LIBRERÍA NATIVA DE MARIADB/MYSQL EN ARCH
 
 using namespace std;
 
 // 1. ESTRUCTURAS EXACTAS DE Parqueo.cpp
-// Si no son idénticas, la lectura del binario arrojará basura en memoria.
 struct Vehiculo {
     char placa[15];
     char marca[30];
@@ -30,7 +30,7 @@ struct DatosCierre {
     int diaOperacion;
     int totalVehiculos;
     double montoTotal;
-    double promedioTiempo; // en minutos
+    double promedioTiempo; 
 };
 
 // 3. GENERACIÓN DE REPORTES (CSV y HTML)
@@ -39,9 +39,7 @@ void generarReporteCSV(DatosCierre datos) {
     ofstream archivo(nombreArchivo);
     
     if(archivo.is_open()) {
-        // Cabeceras del CSV
         archivo << "Dia,Vehiculos Atendidos,Total Recaudado,Promedio Tiempo (min)\n";
-        // Datos
         archivo << datos.diaOperacion << "," << datos.totalVehiculos << ","
                 << datos.montoTotal << "," << datos.promedioTiempo << "\n";
         archivo.close();
@@ -56,21 +54,75 @@ void generarReporteHTML(DatosCierre datos) {
     ofstream archivo(nombreArchivo);
     
     if(archivo.is_open()) {
-        archivo << "<!DOCTYPE html>\n<html>\n<head>\n<title>Reporte Dia " << datos.diaOperacion << "</title>\n";
-        archivo << "<style>table { border-collapse: collapse; width: 50%; margin-top: 20px; } th, td { border: 1px solid black; padding: 8px; text-align: center; } th { background-color: #f2f2f2; }</style>\n";
+        archivo << "<!DOCTYPE html>\n<html>\n<head>\n";
+        archivo << "<title>Reporte de Parqueo</title>\n";
+        archivo << "<style>\n";
+        archivo << "body { font-family: Arial, sans-serif; background-color: #f4f4f4; text-align: center; }\n";
+        archivo << ".contenedor { background-color: white; width: 60%; margin: 20px auto; padding: 20px; border-radius: 8px; box-shadow: 2px 2px 10px gray; }\n";
+        archivo << "table { width: 100%; border-collapse: collapse; margin-top: 20px; }\n";
+        archivo << "th, td { border: 1px solid #dddddd; padding: 10px; }\n";
+        archivo << "th { background-color: #0056b3; color: white; }\n";
+        archivo << "</style>\n";
         archivo << "</head>\n<body>\n";
+        archivo << "<div class='contenedor'>\n";
         archivo << "<h2>Resumen de Jornada - Dia " << datos.diaOperacion << "</h2>\n";
-        archivo << "<table>\n<tr><th>Vehiculos Atendidos</th><th>Monto Recaudado (Q)</th><th>Promedio Tiempo (min)</th></tr>\n";
-        archivo << "<tr><td>" << datos.totalVehiculos << "</td><td>" << datos.montoTotal << "</td><td>" << datos.promedioTiempo << "</td></tr>\n";
-        archivo << "</table>\n</body>\n</html>";
+        archivo << "<table>\n";
+        archivo << "<tr><th>Vehiculos Atendidos</th><th>Total Recaudado</th><th>Tiempo Promedio</th></tr>\n";
+        archivo << "<tr><td>" << datos.totalVehiculos << "</td><td>Q" << datos.montoTotal << "</td><td>" << datos.promedioTiempo << " min</td></tr>\n";
+        archivo << "</table>\n";
+        archivo << "</div>\n";
+        archivo << "</body>\n</html>";
         archivo.close();
-        cout << "[OK] Reporte HTML generado: " << nombreArchivo << endl;
+        cout << "[OK] Reporte HTML generado exitosamente." << endl;
     } else {
         cout << "[ERROR] No se pudo crear el archivo HTML." << endl;
     }
 }
 
-// 4. LECTURA DEL ARCHIVO BINARIO Y CÁLCULOS
+// 4. CONEXIÓN Y SINCRONIZACIÓN CON MYSQL (API NATIVA)
+void sincronizarMySQL(DatosCierre datos, const vector<string>& placasNuevas) {
+    MYSQL *conn = mysql_init(NULL);
+
+    if (conn == NULL) {
+        cout << "[ERROR SQL] No se pudo inicializar la libreria MySQL." << endl;
+        return;
+    }
+
+    cout << "Conectando a la base de datos en la nube..." << endl;
+    
+    // IMPORTANTE: REEMPLAZA "TU_CONTRASEÑA_AQUI" CON TU CONTRASEÑA REAL DE AIVEN
+    if (mysql_real_connect(conn, "mysql-35378f5d-parqueoumg.d.aivencloud.com", "avnadmin", "TU_CONTRASEÑA_AQUI", "defaultdb", 21973, NULL, 0) == NULL) {
+        cout << "[ERROR SQL] Error de conexion: " << mysql_error(conn) << endl;
+        mysql_close(conn);
+        return;
+    }
+
+    // Insertar el resumen de la jornada
+    string queryResumen = "INSERT INTO jornada_cierre (dia_operacion, total_vehiculos_atendidos, monto_total_recaudado, promedio_tiempo_minutos) VALUES (" 
+                          + to_string(datos.diaOperacion) + ", " 
+                          + to_string(datos.totalVehiculos) + ", " 
+                          + to_string(datos.montoTotal) + ", " 
+                          + to_string(datos.promedioTiempo) + ")";
+    
+    if (mysql_query(conn, queryResumen.c_str())) {
+        cout << "[ERROR SQL] Al insertar resumen: " << mysql_error(conn) << endl;
+    }
+
+    // Insertar las placas nuevas
+    if (!placasNuevas.empty()) {
+        for (const string& placa : placasNuevas) {
+            string queryPlaca = "INSERT IGNORE INTO placas_registradas (placa) VALUES ('" + placa + "')";
+            if (mysql_query(conn, queryPlaca.c_str())) {
+                cout << "[ERROR SQL] Al insertar placa: " << mysql_error(conn) << endl;
+            }
+        }
+    }
+
+    mysql_close(conn);
+    cout << "[OK] Sincronizacion con MySQL exitosa. Datos guardados en la nube." << endl;
+}
+
+// 5. LECTURA DEL ARCHIVO BINARIO Y CÁLCULOS
 void procesarCierreDia(int diaObjetivo, double tasaPorHora) {
     ifstream archivo("StatusParqueo.dat", ios::binary);
     
@@ -85,21 +137,17 @@ void procesarCierreDia(int diaObjetivo, double tasaPorHora) {
     long int tiempoTotalSegundos = 0;
     vector<string> placasNuevas;
 
-    // Recorremos el archivo de principio a fin
     while (archivo.read(reinterpret_cast<char*>(&reg), sizeof(RegistroArchivo))) {
-        // Solo nos interesan los registros de SALIDA del día que estamos cerrando
         if (reg.diaRegistro == diaObjetivo && strcmp(reg.accion, "SALIDA") == 0) {
             vehiculosAtendidos++;
 
             long int segundosDentro = reg.vehiculo.horaSalida - reg.vehiculo.horaEntrada;
             tiempoTotalSegundos += segundosDentro;
 
-            // El cálculo se realiza cobrando la hora o fracción de hora [cite: 35]
             double horas = ceil(segundosDentro / 3600.0);
-            if (horas == 0) horas = 1; // Cobro mínimo de 1 hora
+            if (horas == 0) horas = 1; 
             totalRecaudado += (horas * tasaPorHora);
 
-            // Almacenamos la placa para luego enviarla a MySQL
             placasNuevas.push_back(reg.vehiculo.placa);
         }
     }
@@ -116,13 +164,13 @@ void procesarCierreDia(int diaObjetivo, double tasaPorHora) {
     generarReporteCSV(resumen);
     generarReporteHTML(resumen);
 
-    // TODO: Llamar a sincronizarMySQL(resumen, placasNuevas);
+    sincronizarMySQL(resumen, placasNuevas);
 }
 
-// Main temporal solo para que pruebes tu código aislado del resto
+// Main temporal solo para que pruebes tu código
 int main() {
-    int diaACerrar = 1; // Puedes cambiar esto según el día que quieras probar
-    double tasaUsuario = 15.0; // Q15 por hora
+    int diaACerrar = 1; 
+    double tasaUsuario = 15.0; 
     
     cout << "--- INICIANDO PROCESO DE CIERRE ---" << endl;
     procesarCierreDia(diaACerrar, tasaUsuario);
