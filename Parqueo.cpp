@@ -470,7 +470,7 @@ void cerrarDia() {
     if (conn) {
         unsigned int ssl_mode = 0;
         mysql_options(conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &ssl_mode);
-        if (mysql_real_connect(conn, "mysql-35378f5d-parqueoumg.d.aivencloud.com", "avnadmin", "AVNS_cDXXUn2LbO82VWFko9x", "defaultdb", 21973, NULL, 0)) {
+        if (mysql_real_connect(conn, "mysql-35378f5d-parqueoumg.d.aivencloud.com", "avnadmin", "COLCOAR ACA EL PASWORD", "defaultdb", 21973, NULL, 0)) {
             string q = "INSERT INTO jornada_cierre (dia_operacion, total_vehiculos_atendidos, monto_total_recaudado, promedio_tiempo_minutos) VALUES ("
                        + to_string(diaActual) + "," + to_string(vehiculosAtendidos) + ","
                        + to_string(totalRecaudado) + "," + to_string(promedioMinutos) + ")";

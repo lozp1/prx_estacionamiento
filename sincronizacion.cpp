@@ -93,7 +93,7 @@ void sincronizarMySQL(DatosCierre datos, const vector<string>& placasNuevas) {
     unsigned int ssl_mode = 0;  // 0 = SSL deshabilitado en MariaDB
     mysql_options(conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &ssl_mode);
     
-if (mysql_real_connect(conn, "mysql-35378f5d-parqueoumg.d.aivencloud.com", "avnadmin", "AVNS_cDXXUn2LbO82VWFko9x", "defaultdb", 21973, NULL, 0) == NULL) {
+if (mysql_real_connect(conn, "mysql-35378f5d-parqueoumg.d.aivencloud.com", "avnadmin", "COLOCAR PASSWORD", "defaultdb", 21973, NULL, 0) == NULL) {
         cout << "[ERROR SQL] Error de conexion: " << mysql_error(conn) << endl;
         mysql_close(conn);
         return;
