@@ -4,7 +4,7 @@
 #include <vector>
 #include <cstring>
 #include <cmath> 
-#include <mysql/mysql.h> // LIBRERÍA NATIVA DE MARIADB/MYSQL EN ARCH
+#include <mysql.h>
 
 using namespace std;
 
@@ -89,9 +89,11 @@ void sincronizarMySQL(DatosCierre datos, const vector<string>& placasNuevas) {
     }
 
     cout << "Conectando a la base de datos en la nube..." << endl;
+
+    unsigned int ssl_mode = 0;  // 0 = SSL deshabilitado en MariaDB
+    mysql_options(conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &ssl_mode);
     
-    // IMPORTANTE: REEMPLAZA "TU_CONTRASEÑA_AQUI" CON TU CONTRASEÑA REAL DE AIVEN
-    if (mysql_real_connect(conn, "mysql-35378f5d-parqueoumg.d.aivencloud.com", "avnadmin", "TU_CONTRASEÑA_AQUI", "defaultdb", 21973, NULL, 0) == NULL) {
+if (mysql_real_connect(conn, "mysql-35378f5d-parqueoumg.d.aivencloud.com", "avnadmin", "AVNS_cDXXUn2LbO82VWFko9x", "defaultdb", 21973, NULL, 0) == NULL) {
         cout << "[ERROR SQL] Error de conexion: " << mysql_error(conn) << endl;
         mysql_close(conn);
         return;

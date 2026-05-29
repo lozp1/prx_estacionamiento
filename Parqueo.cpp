@@ -5,7 +5,9 @@
 #include <stack>
 #include <queue>
 #include <vector>
-#include <cstdlib> 
+#include <cstdlib>
+#include <cmath>
+#include <mysql.h>  
 
 using namespace std;
 
@@ -17,14 +19,14 @@ struct Vehiculo {
     char modelo[30];
     long int horaEntrada; 
     long int horaSalida;  
-    int dia;              // Guarda el día que ingreso el carro
+    int dia;              // Guarda el dï¿½a que ingreso el carro
 };
 
 struct RegistroArchivo {
     Vehiculo vehiculo;
     char accion[20];       //Es que hace el algoritmo
     long int horaRegistro; // Guarda las horas
-    int diaRegistro;      // Guarda los días
+    int diaRegistro;      // Guarda los dï¿½as
 };
 
 //Dimensiones del parqueo
@@ -32,10 +34,10 @@ const int CANT_CARRILES = 3;
 const int CAPACIDAD_CARRIL = 3;  
 const char* ARCHIVO_DATOS = "StatusParqueo.dat"; 
 
-//Guardado y permanencia de información
+//Guardado y permanencia de informaciï¿½n
 vector<stack<Vehiculo> > carriles; 
 queue<Vehiculo> colaEntrada;       
-int diaActual = 1;        // Cuenta los días (se reinicia según el documento)
+int diaActual = 1;        // Cuenta los dï¿½as (se reinicia segï¿½n el documento)
 
 //Funciones
 void inicializarParqueo();
@@ -46,7 +48,8 @@ void ingresarVehiculo(const char* placa, const char* marca, const char* modelo);
 void retirarVehiculo(const char* placaBusqueda);
 void buscarVehiculo(const char* placaBusqueda);
 void mostrarEstadoParqueo();
-void avanzarDia();       
+void avanzarDia();     
+void cerrarDia();  
 
 //Programa 
 int main() {
@@ -56,14 +59,15 @@ int main() {
     char placa[15], marca[30], modelo[30];
 
     do {
-        system("cls"); // Limpia la pantalla antes de mostrar el menú principal
+        system("cls"); // Limpia la pantalla antes de mostrar el menï¿½ principal
         cout << "    CONTROL DE PARQUEO  |  DIA: " << diaActual << endl;
         cout << "1. Registrar Ingreso de Vehiculo" << endl;
         cout << "2. Registrar Salida de Vehiculo" << endl;
         cout << "3. Buscar Vehiculo por Placa" << endl;
         cout << "4. Ver Estado de los Espacios (Mapa)" << endl;
         cout << "5. Avanzar de Dia" << endl;
-        cout << "6. Cerrar" << endl;
+        cout << "6. Cierre del Dia (Reporte + MySQL)" << endl;
+        cout << "7. Cerrar" << endl;
         cout << "Seleccione una opcion: ";
         cin >> opcion; 
 
@@ -97,20 +101,23 @@ int main() {
                 avanzarDia();
                 break;
             case 6:
+                cerrarDia();
+                break;        
+            case 7:
                 system("cls");
                 cout << "Guardando" << endl;
-                break;
+                break;             
             default:
                 system("cls");
                 cout << "Esta opcion no esta disponible" << endl;
         }
         
-        if (opcion != 6) {
+        if (opcion != 7) {
             cout << "\nPresione ENTER para continuar...";
             cin.ignore();
             cin.get();
         }
-    } while (opcion != 6); 
+    } while (opcion != 7); 
 
     return 0; 
 }
@@ -135,7 +142,7 @@ void cargarEstadoAnterior() {
 
     RegistroArchivo registro;
     
-    // Primero leemos el archivo para saber en qué día nos quedamos
+    // Primero leemos el archivo para saber en quï¿½ dï¿½a nos quedamos
     while (archivo.read(reinterpret_cast<char*>(&registro), sizeof(RegistroArchivo))) {
         if (registro.diaRegistro > diaActual && registro.diaRegistro < 10000) {
             diaActual = registro.diaRegistro; 
@@ -279,7 +286,7 @@ void retirarVehiculo(const char* placaBusqueda) {
 }
 
 void buscarVehiculo(const char* placaBusqueda) {
-    // También corregido aquí para evitar errores de compilación
+    // Tambien corregido aqui para evitar errores de compilacion
     ifstream archivo;
     archivo.open(ARCHIVO_DATOS, ios::binary);
     
@@ -371,6 +378,140 @@ void avanzarDia() {
     cout << "El sistema ha avanzado de Dia " << diaActual << "." << endl;
 }
 
-//De paso si ven alguna linea que no se entiende me avisan o agregan el comentario explicandola
-//Creo que ahí esta la idea es que los comentarios nos ayuden a entenderlo todos pero me cuentan si hay algo que no esta claro
-//José Samuel Sigüina Chonay - Proyecto Programación I 
+void cerrarDia() {
+    cout << "--- INICIANDO CIERRE DEL DIA " << diaActual << " ---" << endl;
+
+    /*
+    DEBUG TEMPORAL - borrar despues
+    ifstream debug(ARCHIVO_DATOS, ios::binary);
+    RegistroArchivo tmp;
+    int contador = 0;
+    while (debug.read(reinterpret_cast<char*>(&tmp), sizeof(RegistroArchivo))) {
+        cout << "[DEBUG] placa=" << tmp.vehiculo.placa 
+             << " accion=" << tmp.accion 
+             << " diaRegistro=" << tmp.diaRegistro << endl;
+        contador++;
+    }
+    debug.close();
+    cout << "[DEBUG] Total registros leidos: " << contador << endl;
+    cout << "[DEBUG] Buscando diaActual=" << diaActual << endl;
+    FIN DEBUG
+
+    */
+
+    ifstream archivo(ARCHIVO_DATOS, ios::binary);
+    if (!archivo.is_open()) {
+        cout << "[ERROR] No se pudo abrir StatusParqueo.dat." << endl;
+        return;
+    }
+
+    RegistroArchivo reg;
+    int vehiculosAtendidos = 0;
+    double totalRecaudado = 0.0;
+    long int tiempoTotalSegundos = 0;
+    double tasaPorHora = 15.0;
+    vector<string> placasCierre;
+
+    while (archivo.read(reinterpret_cast<char*>(&reg), sizeof(RegistroArchivo))) {
+        if (reg.diaRegistro == diaActual && strcmp(reg.accion, "SALIDA") == 0) {
+            vehiculosAtendidos++;
+            long int segundos = reg.vehiculo.horaSalida - reg.vehiculo.horaEntrada;
+            tiempoTotalSegundos += segundos;
+            double horas = ceil(segundos / 3600.0);
+            if (horas == 0) horas = 1;
+            totalRecaudado += (horas * tasaPorHora);
+            placasCierre.push_back(reg.vehiculo.placa);
+        }
+    }
+    archivo.close();
+
+    if (vehiculosAtendidos == 0) {
+        cout << "No hubo salidas registradas en el Dia " << diaActual << "." << endl;
+        return;
+    }
+
+    double promedioMinutos = (tiempoTotalSegundos / 60.0) / vehiculosAtendidos;
+
+    // --- Reporte CSV ---
+    string csv = "Reporte_Dia_" + to_string(diaActual) + ".csv";
+    ofstream fcsv(csv);
+    if (fcsv.is_open()) {
+        fcsv << "Dia,Vehiculos Atendidos,Total Recaudado,Promedio Tiempo (min)\n";
+        fcsv << diaActual << "," << vehiculosAtendidos << "," << totalRecaudado << "," << promedioMinutos << "\n";
+        fcsv.close();
+        cout << "[OK] Reporte CSV generado: " << csv << endl;
+    }
+
+    // --- Reporte HTML ---
+    string html = "Reporte_Dia_" + to_string(diaActual) + ".html";
+    ofstream fhtml(html);
+    if (fhtml.is_open()) {
+        fhtml << "<!DOCTYPE html>\n<html>\n<head>\n";
+        fhtml << "<title>Reporte de Parqueo</title>\n";
+        fhtml << "<style>\n";
+        fhtml << "body { font-family: Arial, sans-serif; background-color: #f4f4f4; text-align: center; }\n";
+        fhtml << ".contenedor { background-color: white; width: 60%; margin: 20px auto; padding: 20px; border-radius: 8px; box-shadow: 2px 2px 10px gray; }\n";
+        fhtml << "table { width: 100%; border-collapse: collapse; margin-top: 20px; }\n";
+        fhtml << "th, td { border: 1px solid #dddddd; padding: 10px; }\n";
+        fhtml << "th { background-color: #0056b3; color: white; }\n";
+        fhtml << "</style>\n</head>\n<body>\n";
+        fhtml << "<div class='contenedor'>\n";
+        fhtml << "<h2>Resumen de Jornada - Dia " << diaActual << "</h2>\n";
+        fhtml << "<table>\n";
+        fhtml << "<tr><th>Vehiculos Atendidos</th><th>Total Recaudado</th><th>Tiempo Promedio</th></tr>\n";
+        fhtml << "<tr><td>" << vehiculosAtendidos << "</td><td>Q" << totalRecaudado << "</td><td>" << promedioMinutos << " min</td></tr>\n";
+        fhtml << "</table>\n</div>\n</body>\n</html>";
+        fhtml.close();
+        cout << "[OK] Reporte HTML generado." << endl;
+    }
+
+    // --- MySQL ---
+    MYSQL *conn = mysql_init(NULL);
+    if (conn) {
+        unsigned int ssl_mode = 0;
+        mysql_options(conn, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &ssl_mode);
+        if (mysql_real_connect(conn, "mysql-35378f5d-parqueoumg.d.aivencloud.com", "avnadmin", "AVNS_cDXXUn2LbO82VWFko9x", "defaultdb", 21973, NULL, 0)) {
+            string q = "INSERT INTO jornada_cierre (dia_operacion, total_vehiculos_atendidos, monto_total_recaudado, promedio_tiempo_minutos) VALUES ("
+                       + to_string(diaActual) + "," + to_string(vehiculosAtendidos) + ","
+                       + to_string(totalRecaudado) + "," + to_string(promedioMinutos) + ")";
+            if (mysql_query(conn, q.c_str()))
+                cout << "[ERROR SQL] " << mysql_error(conn) << endl;
+            for (const string& p : placasCierre) {
+                string qp = "INSERT IGNORE INTO placas_registradas (placa) VALUES ('" + p + "')";
+                mysql_query(conn, qp.c_str());
+            }
+            mysql_close(conn);
+            cout << "[OK] Datos sincronizados con MySQL." << endl;
+        } else {
+            cout << "[ERROR SQL] " << mysql_error(conn) << endl;
+            mysql_close(conn);
+        }
+    }
+
+    avanzarDia();
+}
+
+/*
+
+De paso si ven alguna linea que no se entiende me avisan o agregan el comentario explicandola
+Creo que ahi esta la idea es que los comentarios nos ayuden a entenderlo todos pero me cuentan si hay algo que no esta claro
+Jose Samuel Sigï¿½ina Chonay - Proyecto Programacion I 
+
+*/
+
+// Orale esta bueno
+
+// Anotaciones importantes
+
+/* 
+
+1. libreria agregada: 
+    <cmath> permite hacer operaciones matematicas
+    #include <mysql.h> permitir conexion a mysql
+
+2. nueva funcion: void cerrarDia();
+3. case actualizado: opcion 6 cambiada y opcion 7 agregada
+4. menu de opciones: Cierre del Dia (Reporte +  MySQL) agregado
+5. en el while de las opciones del menu, fue cambiado el 6 por 7
+
+*/
