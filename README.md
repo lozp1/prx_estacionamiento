@@ -1,78 +1,122 @@
-# Sistema de Control de Parqueo
+<h1 align="center">
+    <img src="https://readme-typing-svg.herokuapp.com/?font=Righteous&size=35&center=true&vCenter=true&width=700&height=70&duration=4000&color=1877F2&lines=Sistema+de+Control+de+Parqueo+🚗;Proyecto+Programacion+I+💻;Universidad+Mariano+Galvez+🎓" />
+</h1>
 
-Proyecto de Programación I — Universidad Mariano Gálvez  
-Desarrollado en C++ con sincronización a base de datos MySQL en la nube (Aiven).
+<h3 align="center">Sistema de gestión de estacionamiento en C++ con sincronización MySQL en la nube ☁️</h3>
 
----
+<br/>
 
-## Descripción
+<div align="center">
 
-Sistema de gestión de un estacionamiento que permite registrar ingresos y salidas de vehículos, visualizar el estado del parqueo en tiempo real, y generar reportes de cierre diario sincronizados con una base de datos en la nube.
+🚘 **Gestión de vehículos** con pilas y colas en C++
 
----
+☁️ **Base de datos en la nube** via Aiven MySQL
 
-## Archivos
+📊 **Reportes automáticos** en CSV y HTML al cierre del día
+
+🔐 **Persistencia de datos** con archivo binario `.dat`
+
+</div>
+
+<hr/>
+
+<h2 align="center">⚒️ Tecnologías Utilizadas ⚒️</h2>
+<br/>
+<div align="center">
+    <img src="https://skillicons.dev/icons?i=cpp,mysql,github,git,vscode,windows" />
+</div>
+<br/>
+<hr/>
+
+<h2 align="center">📂 Archivos del Proyecto</h2>
+<br/>
+
+<div align="center">
 
 | Archivo | Descripción |
 |---|---|
 | `Parqueo.cpp` | Sistema principal con menú interactivo |
-| `sincronizacion.cpp` | Módulo independiente de cierre y sincronización MySQL |
-| `StatusParqueo.dat` | Archivo binario de estado del parqueo |
+| `sincronizacion.cpp` | Módulo independiente de cierre y reporte |
+| `StatusParqueo.dat` | Estado persistente del parqueo |
 
----
+</div>
 
-## Funcionalidades
+<hr/>
 
-- Registrar ingreso de vehículos (placa, marca, modelo)
-- Registrar salida de vehículos con cálculo de tiempo y cobro
-- Buscar vehículo por placa con historial de movimientos
-- Ver mapa del estado actual de carriles y cola de espera
-- Avanzar de día
-- **Cierre del día:** genera reporte CSV, reporte HTML y sincroniza con MySQL en la nube
+<h2 align="center">🗺️ Estructura del Parqueo</h2>
+<br/>
 
----
+```
+┌──────────────────────────────────────────┐
+│           PARQUEO - 3 CARRILES           │
+│                                          │
+│  Carril 1: [ Auto ][ Auto ][ Auto ]      │
+│  Carril 2: [ Auto ][ Auto ][ Auto ]      │
+│  Carril 3: [ Auto ][ Auto ][ Auto ]      │
+│                                          │
+│  Cola Exterior: [ ][ ][ ]...             │
+└──────────────────────────────────────────┘
+  Tasa: Q15.00/hora  |  Cobro por hora completa
+```
 
-## Estructura del Parqueo
+<hr/>
 
-- 3 carriles con capacidad de 3 vehículos cada uno (implementados con pilas)
-- Cola de espera exterior para cuando el parqueo está lleno
-- Tasa de cobro: Q15.00 por hora (se cobra la hora completa)
+<h2 align="center">⚙️ Compilación y Uso</h2>
+<br/>
 
----
-
-## Compilación
-
-Requiere tener instalado `libmariadbclient` via MSYS2:
-
+**1. Instalar dependencia (MSYS2 UCRT64):**
 ```bash
 pacman -S mingw-w64-ucrt-x86_64-libmariadbclient
 ```
 
-Compilar:
-
+**2. Compilar:**
 ```bash
 g++ Parqueo.cpp -o Parqueo.exe -I/ucrt64/include/mariadb -L/ucrt64/lib -lmariadb
 ```
 
-Ejecutar:
-
+**3. Ejecutar:**
 ```bash
 ./Parqueo.exe
 ```
 
----
+<hr/>
 
-## Base de Datos
+<h2 align="center">📋 Menú del Sistema</h2>
+<br/>
 
-Conectado a MySQL en la nube via **Aiven**.  
-Tablas utilizadas:
+```
+    CONTROL DE PARQUEO  |  DIA: 1
+1. Registrar Ingreso de Vehiculo
+2. Registrar Salida de Vehiculo
+3. Buscar Vehiculo por Placa
+4. Ver Estado de los Espacios (Mapa)
+5. Avanzar de Dia
+6. Cierre del Dia (Reporte + MySQL)
+7. Cerrar
+```
 
-- `jornada_cierre` — resumen diario de operaciones
-- `placas_registradas` — registro de placas atendidas
+<hr/>
 
----
+<h2 align="center">👨‍💻 Autores</h2>
+<br/>
+<div align="center">
 
-## Autores
+| Nombre | Rol |
+|---|---|
+| Hemerson René López Hernández 7690-25-4844 |
+| José Samuel Sigüina Chonay 7690-25-8574 |
+| Franco Paolo López Gálvez 7690-25-5523 |
+| Anderson Aldana González 7690-25-2440 |
 
-- José Samuel Sigüina Chonay
-- Franco Paolo Loza
+</div>
+
+<br/>
+
+<div align="center">
+    <img src="https://img.shields.io/badge/C++-00599C?style=for-the-badge&logo=c%2B%2B&logoColor=white" />
+    <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white" />
+    <img src="https://img.shields.io/badge/Aiven-FF3E00?style=for-the-badge&logo=aiven&logoColor=white" />
+    <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" />
+</div>
+
+<br/>
