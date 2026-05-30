@@ -103,10 +103,10 @@ g++ Parqueo.cpp -o Parqueo.exe -I/ucrt64/include/mariadb -L/ucrt64/lib -lmariadb
 
 | Nombre | Rol |
 |---|---|
-| Hemerson René López Hernández 7690-25-4844 |
-| José Samuel Sigüina Chonay 7690-25-8574 |
-| Franco Paolo López Gálvez 7690-25-5523 |
-| Anderson Aldana González 7690-25-2440 |
+| Hemerson René López Hernández 7690-25-4844 | Unión de Estructura y Manual de Usuario
+| José Samuel Sigüina Chonay 7690-25-8574 | Estructura de Datos y Menú del sistema
+| Franco Paolo López Gálvez 7690-25-5523 | Registros en Base de Datos y Generación de reportes
+| Anderson Aldana González 7690-25-2440 | Funcionamiento de Cálculos y Precios de Parqueo
 
 </div>
 
